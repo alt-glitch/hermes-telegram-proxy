@@ -81,7 +81,8 @@ PHASE 3 — Wire it into Hermes Agent:
   the base_url line at the same indentation as the other extra keys, 4 spaces.)
   Tell me to back up config.yaml first (cp ~/.hermes/config.yaml ~/.hermes/config.yaml.bak).
   Then have ME (not you) restart the gateway:
-    systemctl --user restart hermes-gateway.service
+    hermes gateway restart
+    #   or, if my install uses systemd:  systemctl --user restart hermes-gateway.service
   (If my Hermes runs differently — Docker, a different service manager — ask how
   I run it and adapt; never restart it from inside an agent session.)
 

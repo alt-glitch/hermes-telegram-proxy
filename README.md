@@ -93,7 +93,8 @@ curl https://<your-worker>.workers.dev/healthz      # -> {"ok":true}
 ## Point Hermes Agent at it
 
 The gateway's Telegram platform accepts a custom Bot API base URL
-(`Application.builder().base_url(...)` under the hood). Set it in `config.yaml`:
+(`Application.builder().base_url(...)` under the hood). Set it in
+`~/.hermes/config.yaml` under the Telegram platform's `extra` block:
 
 ```yaml
 platforms:
@@ -102,12 +103,69 @@ platforms:
       base_url: "https://<your-worker>.workers.dev/bot"
 ```
 
-Then restart the gateway. That's it — every Bot API call (send + `getUpdates`
-long-poll) now flows through your Worker. No code changes, no env vars.
+> **Which block?** Depending on how your config was generated, the Telegram
+> settings may live under top-level `telegram:` → `extra:` *or* under
+> `platforms:` → `telegram:` → `extra:`. Both feed the same adapter. Add
+> `base_url` next to whatever `extra:` keys you already have (e.g.
+> `rich_messages: true`), at the same indentation. If you have both, use the
+> `platforms.telegram.extra` one.
+
+Then restart the gateway and verify. Every Bot API call (send + `getUpdates`
+long-poll) now flows through your Worker — no code changes, no env vars.
+
+```bash
+# restart (use whichever matches your install):
+hermes gateway restart
+#   or:  systemctl --user restart hermes-gateway.service
+
+# verify the gateway picked it up and connected:
+grep -i "Using custom Telegram base_url" ~/.hermes/logs/gateway.log | tail -1
+grep -iE "Connected to Telegram|telegram connected|connect timed out" ~/.hermes/logs/gateway.log | tail -3
+```
+
+You want a `Using custom Telegram base_url: …` line **and** a recent
+`Connected to Telegram` with no fresh `connect timed out` after the restart.
+Then send your bot a message — it should reply.
 
 > The trailing `/bot` matters: Hermes/PTB appends `<token>/<method>` to it, so
 > the final URL is `https://<you>.workers.dev/bot<token>/<method>`, which this
 > Worker matches.
+
+### ⚙️ A note for AI agents doing this setup
+
+If an AI agent is wiring this up for you, two steps are **deliberately the
+human's** — an agent should *guide*, not perform them:
+
+- **Editing `~/.hermes/config.yaml`** — Hermes guards this file; an agent's
+  file-write tools (`write_file`/`patch`) are **refused** on it
+  (*"Agent cannot modify security-sensitive configuration"*). The agent can
+  show you the exact edit (and may apply it via a plain shell command **after
+  backing the file up** — `cp ~/.hermes/config.yaml ~/.hermes/config.yaml.bak`),
+  but it cannot use its config-editing tools directly.
+- **Restarting the gateway** — an agent running *inside* the Hermes gateway
+  (cron jobs, message handlers) that restarts the gateway **terminates itself
+  mid-run** (self-kill). The restart must be triggered by you, or from a process
+  outside the gateway. (An interactive CLI/TUI session is a separate process and
+  can restart safely.)
+
+So the safe division of labour is: **agent verifies the Worker + drafts the
+config edit + runs the log checks; you save the config and restart the gateway.**
+The [`SETUP_PROMPT.md`](SETUP_PROMPT.md) prompt encodes exactly this split.
+
+### Not the same as Hermes' `proxy_url` / SOCKS "Proxy Support"
+
+Hermes also has a separate, documented
+[Telegram **Proxy Support**](https://hermes-agent.nousresearch.com/docs/user-guide/messaging/telegram#proxy-support)
+feature — `telegram.proxy_url` (or `TELEGRAM_PROXY`) accepting
+`http://`/`https://`/`socks5://`. That **tunnels the TCP connection** through a
+proxy and is what you'd use with a SOCKS5/HTTP proxy on a VPS.
+
+This Worker is the **other** mechanism: `extra.base_url` **points the Bot API at
+a different HTTPS endpoint** (your Worker), which then relays to Telegram. Same
+config family as Hermes'
+[Local Bot API Server](https://hermes-agent.nousresearch.com/docs/user-guide/messaging/telegram#large-files-20mb-via-local-bot-api-server)
+support. Use `base_url` (this repo) when you want a serverless Cloudflare relay;
+use `proxy_url` when you already run a SOCKS5/HTTP proxy. You do **not** need both.
 
 ### Using it from a raw bot (any library)
 
