@@ -15,6 +15,17 @@ your bot ──HTTPS──▶  https://<you>.workers.dev/bot<TOKEN>/<method>
 It is one file — [`src/worker.js`](src/worker.js) — with no dependencies, no
 secrets, and no stored state.
 
+## Deploy your own — one click
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/alt-glitch/telegram-bot-api-proxy)
+
+Clicking this **clones the repo into _your_ GitHub account and deploys it to
+_your_ Cloudflare account** — you end up with your own
+`https://<name>.<your-subdomain>.workers.dev` URL and your own copy of the
+source. No CLI, no server, free tier. This is the recommended path precisely
+because it makes "run your own instance" trivial — see the trust note below for
+why that matters. (Manual CLI / dashboard steps are further down if you prefer.)
+
 ---
 
 ## ⚠️ Read this before you use ANY Telegram proxy
@@ -39,9 +50,10 @@ always sees the raw request.
 
 ---
 
-## Deploy your own (≈3 minutes, free tier)
+## Manual deploy (CLI or dashboard)
 
-You need a free [Cloudflare account](https://dash.cloudflare.com/sign-up).
+Prefer not to use the one-click button? Either of these gives you the same
+result. You need a free [Cloudflare account](https://dash.cloudflare.com/sign-up).
 
 ### Option A — Wrangler CLI
 
